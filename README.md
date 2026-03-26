@@ -2,6 +2,20 @@
 
 Shared GitHub Actions automation for OpenNews Jekyll/static site repos.
 
+---
+
+> ⚠️ **Changes here affect live websites.**
+>
+> This repo is a shared dependency for production sites run by OpenNews. Every merge to `main` automatically creates a new release and increments the version tag. Consuming repos that pin to `@v1` will pick up all patch releases within that major version automatically — meaning a bad merge here can break deploys or health checks across multiple live sites.
+>
+> **Therefore:**
+> - **All changes must go through a pull request.** Direct pushes to `main` are not permitted.
+> - **Dependabot updates require PR review** before merge — they are not auto-merged.
+> - **Merging to `main` triggers an automatic patch release** (e.g. `v1.0.2 → v1.0.3`) via the release workflow.
+> - **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Update the `tag_name` in `.github/workflows/release.yml` and notify consuming repo maintainers before merging.
+
+---
+
 > **Note:** This repo provides only composite actions and reusable workflow YAML. It does not contain shared Ruby code, Rake tasks, or Gems. Ruby/Rake logic lives in each consuming repo's own `Rakefile` and `tasks/` directory.
 
 ## Contents
@@ -93,4 +107,10 @@ On failure, the workflow opens a GitHub Issue in the consuming repo (skipping cr
 
 ## Versioning
 
-Pin to a release tag (`@v1`, `@v1.0.0`) rather than `@main` to avoid unexpected changes. Releases follow semantic versioning.
+Pin to a release tag (`@v1`, `@v1.0.0`) rather than `@main` to avoid unexpected changes. Releases follow [semantic versioning](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions#using-release-management-for-actions).
+
+A floating `@latest` tag is also maintained and always points to the most recent release. Use it only in non-production contexts (local testing, dev repos) — it will automatically follow every patch release without warning.
+
+Every merge to `main` automatically publishes a new patch release via `.github/workflows/release.yml`. Release notes are generated from PR titles, categorized by label (breaking change, enhancement, bug, dependencies).
+
+For breaking changes, manually bump the major version in the release workflow and create the new tag **before** merging, so consuming repos have time to migrate.
