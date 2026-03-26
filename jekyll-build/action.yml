@@ -1,0 +1,40 @@
+name: "Jekyll Build & Test"
+description: "Checkout, setup Ruby, validate YAML, run checks, build Jekyll, and run tests"
+
+inputs:
+  run-checks:
+    description: "Run bundle exec rake check"
+    required: false
+    default: "true"
+  run-tests:
+    description: "Run bundle exec rake test after build"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v6
+
+    - uses: ruby/setup-ruby@v1
+      with:
+        ruby-version-file: ".ruby-version"
+        bundler-cache: true
+
+    - name: Validate YAML
+      shell: bash
+      run: bundle exec rake validate_yaml
+
+    - name: Run configuration checks
+      if: ${{ inputs.run-checks == 'true' }}
+      shell: bash
+      run: bundle exec rake check
+
+    - name: Build Jekyll site
+      shell: bash
+      run: bundle exec rake build
+
+    - name: Run tests
+      if: ${{ inputs.run-tests == 'true' }}
+      shell: bash
+      run: bundle exec rake test
