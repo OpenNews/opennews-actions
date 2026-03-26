@@ -18,7 +18,7 @@ runs:
 
     - uses: ruby/setup-ruby@v1
       with:
-        ruby-version-file: ".ruby-version"
+        ruby-version: ".ruby-version"
         bundler-cache: true
 
     - name: Validate YAML
