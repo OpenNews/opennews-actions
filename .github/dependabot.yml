@@ -10,14 +10,3 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "ci"
-
-  - package-ecosystem: "bundler"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "ruby"
-    commit-message:
-      prefix: "gem"
