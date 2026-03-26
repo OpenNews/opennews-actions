@@ -52,8 +52,6 @@ jobs:
         shell: bash
         run: |
           mapfile -t DEPLOYMENT_VALUES < <(ruby -ryaml -e "
-            # permitted_classes: [] keeps safe_load strict (no Ruby object deserialization).
-            # aliases: true allows YAML anchors/aliases in _config.yml without unsafe classes.
             config = YAML.safe_load_file('_config.yml', permitted_classes: [], aliases: true)
             deployment = config['deployment'] || {}
             puts deployment['bucket'].to_s
