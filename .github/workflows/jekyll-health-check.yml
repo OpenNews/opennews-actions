@@ -1,0 +1,80 @@
+name: Jekyll Health Check
+
+on:
+  workflow_call:
+    inputs:
+      issue-labels:
+        description: "Comma-separated labels to apply to (and search for) the failure issue"
+        required: false
+        type: string
+        default: "automated,health-check,bug"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build Jekyll site
+        uses: OpenNews/opennews-actions/jekyll-build@v1
+        with:
+          run-checks: "false"
+          run-tests: "false"
+
+      - name: Check for outdated dependencies
+        shell: bash
+        run: |
+          echo "=== Checking for outdated gems ==="
+          bundle outdated || true
+
+      - name: Validate build output
+        shell: bash
+        run: |
+          if [ ! -d "_site" ]; then
+            echo "ERROR: _site directory not created"
+            exit 1
+          fi
+
+          if [ ! -f "_site/index.html" ]; then
+            echo "ERROR: index.html not found in _site"
+            exit 1
+          fi
+
+          echo "✅ Build validation passed"
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const labelString = '${{ inputs.issue-labels }}';
+            const labels = labelString.split(',').map(l => l.trim()).filter(l => l.length > 0);
+
+            const title = '🚨 Weekly health check failed';
+            const body = [
+              `The scheduled template validation failed on ${new Date().toISOString()}.`,
+              '',
+              `**Workflow Run:** ${context.payload.repository.html_url}/actions/runs/${context.runId}`,
+              '',
+              'Please investigate the failure and update dependencies as needed.'
+            ].join('\n');
+
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: labelString
+            });
+
+            if (issues.data.length === 0) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: labels
+              });
+            }
