@@ -116,26 +116,26 @@ jobs:
             --paths "/*"
 
       - name: Update Deployment Status (success)
-        if: success()
+        if: success() && steps.deployment.outputs.result != ''
         uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
+              deployment_id: Number('${{ steps.deployment.outputs.result }}'),
               state: 'success',
               environment_url: '${{ inputs.production-url }}'
             });
 
       - name: Update Deployment Status (failure)
-        if: failure()
+        if: failure() && steps.deployment.outputs.result != ''
         uses: actions/github-script@v8
         with:
           script: |
             await github.rest.repos.createDeploymentStatus({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              deployment_id: ${{ steps.deployment.outputs.result }},
+              deployment_id: Number('${{ steps.deployment.outputs.result }}'),
               state: 'failure'
             });
