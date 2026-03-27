@@ -87,7 +87,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               ref: context.sha,
-              environment: '${{ inputs.environment }}',
+              environment: ${{ toJSON(inputs.environment) }},
               auto_merge: false,
               required_contexts: []
             });
@@ -125,7 +125,7 @@ jobs:
               repo: context.repo.repo,
               deployment_id: Number('${{ steps.deployment.outputs.result }}'),
               state: 'success',
-              environment_url: '${{ inputs.production-url }}'
+              environment_url: ${{ toJSON(inputs.production-url) }}
             });
 
       - name: Update Deployment Status (failure)

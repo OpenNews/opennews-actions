@@ -50,7 +50,7 @@ jobs:
         uses: actions/github-script@v8
         with:
           script: |
-            const labelInput = '${{ inputs.issue-labels }}';
+            const labelInput = ${{ toJSON(inputs.issue-labels) }};
             const labels = labelInput.split(',').map(l => l.trim()).filter(Boolean);
 
             // Check if an open issue with all these labels already exists
