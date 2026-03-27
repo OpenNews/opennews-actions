@@ -29,9 +29,10 @@ jobs:
         run: |
           OUTPUT=$(bundle outdated 2>&1 || true)
           echo "$OUTPUT"
-          echo "output<<EOF" >> "$GITHUB_OUTPUT"
+          DELIM="EOF_$(date +%s)_$RANDOM"
+          echo "output<<$DELIM" >> "$GITHUB_OUTPUT"
           echo "$OUTPUT" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "$DELIM" >> "$GITHUB_OUTPUT"
 
       - name: Verify build output exists
         id: verify
