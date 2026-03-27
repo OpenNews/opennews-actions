@@ -36,7 +36,11 @@ jobs:
           generate_release_notes: true
           make_latest: true
 
-      - name: Update floating latest tag
+      - name: Update floating latest and major tags
         run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          MAJOR=$(echo "$TAG" | sed 's/v\([0-9]*\).*/\1/')
           git tag -f latest
           git push origin latest --force
+          git tag -f "v${MAJOR}"
+          git push origin "v${MAJOR}" --force
