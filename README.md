@@ -12,7 +12,7 @@ Shared GitHub Actions automation for OpenNews Jekyll/static site repos.
 > - **All changes must go through a pull request.** Direct pushes to `main` are not permitted.
 > - **Dependabot updates require PR review** before merge — they are not auto-merged.
 > - **Merging to `main` triggers an automatic patch release** (e.g. `v1.0.2 → v1.0.3`) via the release workflow.
-> - **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Update the `tag_name` in `.github/workflows/release.yml` and notify consuming repo maintainers before merging.
+> - **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Coordinate creating a new major release tag (for example, `v2.0.0` and the corresponding `v2` major tag) via the release workflow and notify consuming repo maintainers before merging.
 
 ---
 
