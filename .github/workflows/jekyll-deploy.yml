@@ -1,0 +1,141 @@
+name: Jekyll Deploy
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: "Deployment environment (staging or production)"
+        required: true
+        type: string
+      production-url:
+        description: "Production URL for deployment status (optional)"
+        required: false
+        type: string
+        default: ""
+      aws-region:
+        description: "AWS region"
+        required: false
+        type: string
+        default: "us-east-1"
+      run-checks:
+        description: "Run bundle exec rake check during build"
+        required: false
+        type: boolean
+        default: true
+      run-tests:
+        description: "Run bundle exec rake test during build"
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+  deployments: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ inputs.production-url }}
+    steps:
+      - name: Build & test
+        uses: OpenNews/opennews-actions/jekyll-build@v1
+        with:
+          run-checks: ${{ inputs.run-checks && 'true' || 'false' }}
+          run-tests: ${{ inputs.run-tests && 'true' || 'false' }}
+
+      - name: Extract deployment config
+        id: config
+        shell: bash
+        run: |
+          mapfile -t VALS < <(ruby -ryaml -e "
+            c = YAML.safe_load_file('_config.yml', permitted_classes: [], aliases: true)
+            d = c['deployment'] || {}
+            puts d['bucket'].to_s
+            puts d['staging_bucket'].to_s
+            puts d['cloudfront_distribution_id'].to_s
+          ")
+          PROD_BUCKET="${VALS[0]}"
+          STAGING_BUCKET="${VALS[1]}"
+          CLOUDFRONT="${VALS[2]}"
+
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            BUCKET="$STAGING_BUCKET"
+          else
+            BUCKET="$PROD_BUCKET"
+          fi
+
+          if [ -z "$BUCKET" ]; then
+            echo "Error: bucket not configured for ${{ inputs.environment }}" >&2
+            exit 1
+          fi
+
+          echo "bucket=$BUCKET" >> "$GITHUB_OUTPUT"
+          echo "cloudfront=$CLOUDFRONT" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Deployment
+        id: deployment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const d = await github.rest.repos.createDeployment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.sha,
+              environment: ${{ toJSON(inputs.environment) }},
+              auto_merge: false,
+              required_contexts: []
+            });
+            return d.data.id;
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.aws-region }}
+          role-session-name: Deploy-${{ github.event.repository.name }}-${{ github.run_id }}
+
+      - name: Sync to S3
+        shell: bash
+        run: |
+          aws s3 sync _site/ s3://${{ steps.config.outputs.bucket }} \
+            --delete \
+            --cache-control "public, max-age=3600"
+
+      - name: Invalidate CloudFront
+        if: ${{ inputs.environment == 'production' && steps.config.outputs.cloudfront != '' }}
+        shell: bash
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ steps.config.outputs.cloudfront }} \
+            --paths "/*"
+
+      - name: Update Deployment Status (success)
+        if: success() && steps.deployment.outputs.result != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.result }}'),
+              state: 'success',
+              environment_url: ${{ toJSON(inputs.production-url) }}
+            });
+
+      - name: Update Deployment Status (failure)
+        if: failure() && steps.deployment.outputs.result != ''
+        uses: actions/github-script@v8
+        with:
+          script: |
+            await github.rest.repos.createDeploymentStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              deployment_id: Number('${{ steps.deployment.outputs.result }}'),
+              state: 'failure'
+            });
