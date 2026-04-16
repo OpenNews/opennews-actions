@@ -68,13 +68,6 @@ Send details to **info@opennews.org** with:
 - Potential impact (which consuming repos are affected)
 - Suggested fix (optional)
 
-### What to expect
-
-- **Initial response:** Within 7 business days
-- **Status update:** Within 2 week with triage decision
-- **Fix timeline:** Critical issues patched within 14 days; others within 30 days
-- **Disclosure:** We'll coordinate public disclosure with you after the fix is released
-
 ### After reporting
 
 - We'll acknowledge your report and assess severity
@@ -87,7 +80,7 @@ Send details to **info@opennews.org** with:
 
 When contributing to this repository:
 
-- Pin third-party actions to full commit SHAs, not tags
+- Use trusted third-party actions only, and pin them to approved major versions
 - Use minimal required permissions in workflows
 - Never log or expose secrets
 - Use `actions/checkout@v6` or later (includes security fixes)

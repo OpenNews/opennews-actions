@@ -26,5 +26,5 @@ jobs:
           deny-licenses: AGPL-3.0, SSPL-1.0
           # Comment on PR with findings
           comment-summary-in-pr: always
-          # Don't fail the build on license issues, just warn
+          # Only fail the build for denied licenses in runtime dependencies
           fail-on-scopes: runtime
