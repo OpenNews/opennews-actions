@@ -44,7 +44,7 @@ jobs:
       url: ${{ inputs.production-url }}
     steps:
       - name: Build & test
-        uses: OpenNews/opennews-actions/jekyll-build@v1
+        uses: OpenNews/opennews-actions/jekyll-build@main
         with:
           run-checks: ${{ inputs.run-checks && 'true' || 'false' }}
           run-tests: ${{ inputs.run-tests && 'true' || 'false' }}
