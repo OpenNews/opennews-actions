@@ -1,0 +1,15 @@
+# This is "housekeeping" for OpenNews/opennews-actions only.
+# It keeps the Shared Actions up to date, which is important 
+# for security and functionality.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci

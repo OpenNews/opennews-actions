@@ -1,0 +1,84 @@
+name: Jekyll Health Check
+
+on:
+  workflow_call:
+    inputs:
+      issue-labels:
+        description: "Comma-separated labels to apply to the failure issue"
+        required: false
+        type: string
+        default: "automated,health-check,bug"
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build site (checks and tests disabled)
+        uses: OpenNews/opennews-actions/jekyll-build@v1
+        with:
+          run-checks: "false"
+          run-tests: "false"
+
+      - name: Check for outdated gems
+        id: outdated
+        shell: bash
+        run: |
+          OUTPUT=$(bundle outdated 2>&1 || true)
+          echo "$OUTPUT"
+          DELIM="EOF_$(date +%s)_$RANDOM"
+          echo "output<<$DELIM" >> "$GITHUB_OUTPUT"
+          echo "$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "$DELIM" >> "$GITHUB_OUTPUT"
+
+      - name: Verify build output exists
+        id: verify
+        shell: bash
+        run: |
+          if [ ! -d "_site" ] || [ ! -f "_site/index.html" ]; then
+            echo "Build output missing: _site/index.html not found" >&2
+            echo "build_ok=false" >> "$GITHUB_OUTPUT"
+            exit 1
+          fi
+          echo "build_ok=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create issue on failure
+        if: failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const labelInput = ${{ toJSON(inputs.issue-labels) }};
+            const labels = labelInput.split(',').map(l => l.trim()).filter(Boolean);
+
+            // Check if an open issue with all these labels already exists
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              labels: labels.join(','),
+              state: 'open'
+            });
+
+            if (existing.length > 0) {
+              console.log(`Open issue already exists: #${existing[0].number} — skipping creation`);
+              return;
+            }
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const outdated = ${{ toJSON(steps.outdated.outputs.output) }};
+            const outdatedTrimmed = outdated.trim();
+            const body = [
+              'The scheduled Jekyll health check failed.',
+              '',
+              `See the [workflow run](${runUrl}) for details.`,
+              ...(outdatedTrimmed ? ['', '### Outdated gems', '```', outdatedTrimmed, '```'] : [])
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: 'Health check failed: Jekyll build error',
+              body,
+              labels
+            });
