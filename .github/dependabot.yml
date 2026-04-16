@@ -8,8 +8,28 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # Allow more simultaneous PRs for security updates
+    # Dependabot creates separate PRs for security vs version updates
+    open-pull-requests-limit: 10
     labels:
       - dependencies
       - github-actions
     commit-message:
       prefix: ci
+    # Group non-security updates to reduce PR noise
+    # Security updates always get separate PRs (ungrouped)
+    groups:
+      minor-and-patch:
+        patterns: ["*"]
+        update-types:
+          - "minor"
+          - "patch"
+        exclude-patterns:
+          # Never group actions that touch credentials or deployments
+          - "aws-actions/*"
+          - "actions/github-script"
+      major-updates:
+        patterns: ["*"]
+        update-types:
+          - "major"
+        # Major updates get individual PRs for careful review

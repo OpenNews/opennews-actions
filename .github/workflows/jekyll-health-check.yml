@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Build site (checks and tests disabled)
-        uses: OpenNews/opennews-actions/jekyll-build@v1
+        uses: OpenNews/opennews-actions/jekyll-build@main
         with:
           run-checks: "false"
           run-tests: "false"
