@@ -1,45 +1,20 @@
-# OpenNews Shared Repo Actions
+# OpenNews Shared Actions
 
-Shared GitHub Actions functionality for OpenNews Jekyll/static site repos. This helps upgrade these without running around a half-dozen sites, e.g. Dependabot.
+Centralized GitHub Actions for OpenNews Jekyll sites. Instead of copying the same build, test, and deploy logic across multiple repos, this provides reusable workflows that all OpenNews sites can reference.
 
----
+## Why this exists
 
-⚠️ **Changes here affect live websites.**  
-This repo is a shared dependency for public sites run by OpenNews. Every merge to `main` automatically creates a new release and increments the version tag.
+**Problem:** OpenNews maintains multiple Jekyll websites. Previously, each had duplicate GitHub Actions workflows, Rake tasks, and config files. Updates meant changing multiple repos as we found Dependabot upgrades or other efficiencies.
 
-The `v1` tag is **floating** — after every merge, the release workflow force-updates it to point at the new patch release. Consuming repos that reference `@v1` receive every patch automatically with no changes on their end, and they cannot opt out without pinning to a specific tag like `@v1.0.3`. A bad merge here immediately breaks deploys or health checks across all of them.  
-PLEASE BE CAREFUL.
+**Solution:** This repo provides shared workflows that consuming repos reference with a single line. Update here once → deployed everywhere automatically.
 
----
+## ⚠️ Important
 
-Since errors are impactful, here are the requirements:
-
-- **All changes must go through a pull request.** Direct pushes to `main` are blocked by branch protection rules, configurable at [Settings → Branches](https://github.com/OpenNews/opennews-actions/settings/branches) in this repo.
-- **Dependabot updates require PR review** before merge, and ask AI/Copilot about impacts of the upgrades before merging & creating a new version here.
-- **Merging to `main` triggers an automatic patch release** (e.g. `v1.0.2 → v1.0.3`) via the release workflow.
-- **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Coordinate creating a new major release tag (for example, `v2.0.0` and the corresponding `v2` major tag) and checking individual sites on staging _before_ merging.
-
----
-
-## Testing changes
-
-Before merging a PR, test against a consuming repo by temporarily pointing its workflow file at your branch:
-
-```yaml
-# composite action
-uses: OpenNews/opennews-actions/jekyll-build@your-branch-name
-
-# reusable workflow
-uses: OpenNews/opennews-actions/.github/workflows/jekyll-deploy.yml@your-branch-name
-```
-
-Push that change to a branch on the consuming repo, then trigger the workflow manually from the **Actions** tab via "Run workflow." Confirm it passes, then revert or delete that branch.
-
-For **Dependabot PRs**, check the release notes for the updated action (linked from the PR) and ask Copilot whether the upgrade introduces any breaking or behavioral changes before approving.
-
----
+**Changes here affect live production websites.** Every merge to `main` auto-releases and deploys to all consuming sites via the floating `@v1` tag. See [SECURITY.md](SECURITY.md) for contribution guidelines and security policies.
 
 ## Contents
+
+**For consuming repos:**
 
 | Path | Type | Purpose |
 |---|---|---|
@@ -47,7 +22,20 @@ For **Dependabot PRs**, check the release notes for the updated action (linked f
 | `.github/workflows/jekyll-deploy.yml` | Reusable Workflow | Build, deploy to S3, invalidate CloudFront, update GitHub Deployment status |
 | `.github/workflows/jekyll-health-check.yml` | Reusable Workflow | Build check + open a GitHub Issue on failure |
 
----
+**Housekeeping (for this repo only):**
+
+| Path | Type | Purpose |
+|---|---|---|
+| `.github/workflows/codeql.yml` | Internal Workflow | CodeQL security scanning for GitHub Actions (requires `ENABLE_CODEQL_ADVANCED` variable) |
+| `.github/workflows/dependency-review.yml` | Internal Workflow | Blocks PRs with vulnerable or restricted-license dependencies |
+| `.github/workflows/release.yml` | Internal Workflow | Auto-creates patch releases and updates floating tags on merge to `main` |
+
+
+## Repository Configuration
+
+**Advanced CodeQL scanning is enabled**  
+The CodeQL workflow is enabled by default to avoid conflicts with GitHub's default code scanning. It depends on an Actions Variable -- `ENABLE_CODEQL_ADVANCED: true` -- set in the repo [Settings → Secrets and variables → Actions → Variables](https://github.com/OpenNews/opennews-actions/settings/variables/actions)
+
 
 ## Usage
 
@@ -67,8 +55,6 @@ The consuming repo must have:
 - A `.ruby-version` file
 - A `Gemfile` with Jekyll and required gems
 - `bundle exec rake validate_yaml`, `rake check`, `rake build`, and `rake test` tasks defined
-
----
 
 ### `jekyll-deploy` reusable workflow
 
@@ -102,8 +88,6 @@ deployment:
   cloudfront_distribution_id: ABCDEF123456  # optional; omit to skip invalidation
 ```
 
----
-
 ### `jekyll-health-check` reusable workflow
 
 ```yaml
@@ -124,14 +108,8 @@ jobs:
 
 On failure, the workflow opens a GitHub Issue in the consuming repo (skipping creation if an open issue with the same labels already exists). The schedule trigger must be defined in the consuming repo's workflow — it cannot live in a reusable workflow.
 
----
+## Versions
 
-## Versioning
+**For consuming repos:** Use `@v1` (auto-updates) or pin to specific versions like `@v1.0.3` (manual updates only).
 
-Pin to a release tag (`@v1`, `@v1.0.0`) rather than `@main` to avoid unexpected changes. Releases follow [semantic versioning](https://docs.github.com/en/actions/how-tos/create-and-publish-actions/manage-custom-actions#using-release-management-for-actions).
-
-A floating `@latest` tag is also maintained and always points to the most recent release. Use it only in non-production contexts (local testing, dev repos) — it will automatically follow every patch release without warning.
-
-Every merge to `main` automatically publishes a new patch release via `.github/workflows/release.yml`. Release notes are generated from PR titles, categorized by label (breaking change, enhancement, bug, dependencies).
-
-For breaking changes, manually bump the major version by creating and push the tag via git. This is the only way to break out of the auto-versioning count to a v2 or v3 or wherever you are.
+**For contributors:** See [SECURITY.md](SECURITY.md) for release process, testing requirements, and security policies.

@@ -14,6 +14,33 @@ This repository contains shared GitHub Actions workflows and composite actions u
 - Vulnerabilities in consuming repositories (report to those repos directly)
 - General GitHub Actions platform issues (report to GitHub)
 
+---
+
+## Contribution & Release Policy
+
+### Changes affect live sites
+
+Every merge to `main` automatically creates a new patch release and updates the floating `@v1` tag. Sites referencing `@v1` receive the update immediately with no manual intervention.
+
+### Requirements before merging
+
+- **All changes must go through a pull request** — direct pushes to `main` are blocked
+- **PR review required** — especially for Dependabot updates; check release notes for breaking changes
+- **Test against a consuming repo** before merging:
+  ```yaml
+  # Temporarily point at your branch
+  uses: OpenNews/opennews-actions/jekyll-build@your-branch-name
+  ```
+  Run manually from Actions tab, confirm it works, then revert
+- **Breaking changes require a new major version** (e.g., `v2`) — coordinate with team before releasing
+
+### Automatic releases
+
+- Merging to `main` → auto-publishes patch release (e.g., `v1.0.2` → `v1.0.3`)
+- Release notes generated from PR titles
+- Floating `v1` tag force-updated to latest patch
+- For major versions, manually create and push the tag
+
 ## Supported Versions
 
 We support only the latest release. Breaking changes require a new major version (e.g., `v2`). Security fixes are always released as patch updates and automatically deployed via the floating major version tag (`v1` → `v1.0.x`).
