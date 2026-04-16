@@ -28,6 +28,7 @@ Centralized GitHub Actions for OpenNews Jekyll sites. Instead of copying the sam
 |---|---|---|
 | `.github/workflows/codeql.yml` | Internal Workflow | CodeQL security scanning for GitHub Actions (requires `ENABLE_CODEQL_ADVANCED` variable) |
 | `.github/workflows/dependency-review.yml` | Internal Workflow | Blocks PRs with vulnerable or restricted-license dependencies |
+| `.github/workflows/scorecard.yml` | Internal Workflow | Weekly OSSF Scorecard security best practices assessment |
 | `.github/workflows/release.yml` | Internal Workflow | Auto-creates patch releases and updates floating tags on merge to `main` |
 
 
