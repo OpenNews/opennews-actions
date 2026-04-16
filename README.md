@@ -1,22 +1,43 @@
-# opennews-actions
+# OpenNews Shared Repo Actions
 
-Shared GitHub Actions automation for OpenNews Jekyll/static site repos.
-
----
-
-> ⚠️ **Changes here affect live websites.**
->
-> This repo is a shared dependency for production sites run by OpenNews. Every merge to `main` automatically creates a new release and increments the version tag. Consuming repos that pin to `@v1` will pick up all patch releases within that major version automatically — meaning a bad merge here can break deploys or health checks across multiple live sites.
->
-> **Therefore:**
-> - **All changes must go through a pull request.** Direct pushes to `main` are not permitted.
-> - **Dependabot updates require PR review** before merge — they are not auto-merged.
-> - **Merging to `main` triggers an automatic patch release** (e.g. `v1.0.2 → v1.0.3`) via the release workflow.
-> - **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Coordinate creating a new major release tag (for example, `v2.0.0` and the corresponding `v2` major tag) via the release workflow and notify consuming repo maintainers before merging.
+Shared GitHub Actions functionality for OpenNews Jekyll/static site repos. This helps upgrade these without running around a half-dozen sites, e.g. Dependabot.
 
 ---
 
-> **Note:** This repo provides only composite actions and reusable workflow YAML. It does not contain shared Ruby code, Rake tasks, or Gems. Ruby/Rake logic lives in each consuming repo's own `Rakefile` and `tasks/` directory.
+⚠️ **Changes here affect live websites.**  
+This repo is a shared dependency for public sites run by OpenNews. Every merge to `main` automatically creates a new release and increments the version tag.
+
+The `v1` tag is **floating** — after every merge, the release workflow force-updates it to point at the new patch release. Consuming repos that reference `@v1` receive every patch automatically with no changes on their end, and they cannot opt out without pinning to a specific tag like `@v1.0.3`. A bad merge here immediately breaks deploys or health checks across all of them.  
+PLEASE BE CAREFUL.
+
+---
+
+Since errors are impactful, here are the requirements:
+
+- **All changes must go through a pull request.** Direct pushes to `main` are blocked by branch protection rules, configurable at [Settings → Branches](https://github.com/OpenNews/opennews-actions/settings/branches) in this repo.
+- **Dependabot updates require PR review** before merge, and ask AI/Copilot about impacts of the upgrades before merging & creating a new version here.
+- **Merging to `main` triggers an automatic patch release** (e.g. `v1.0.2 → v1.0.3`) via the release workflow.
+- **Breaking changes to action inputs or workflow interfaces** (anything that would require consuming repos to update their workflow files) **must be released as a new major version** (e.g. `v2`). Coordinate creating a new major release tag (for example, `v2.0.0` and the corresponding `v2` major tag) and checking individual sites on staging _before_ merging.
+
+---
+
+## Testing changes
+
+Before merging a PR, test against a consuming repo by temporarily pointing its workflow file at your branch:
+
+```yaml
+# composite action
+uses: OpenNews/opennews-actions/jekyll-build@your-branch-name
+
+# reusable workflow
+uses: OpenNews/opennews-actions/.github/workflows/jekyll-deploy.yml@your-branch-name
+```
+
+Push that change to a branch on the consuming repo, then trigger the workflow manually from the **Actions** tab via "Run workflow." Confirm it passes, then revert or delete that branch.
+
+For **Dependabot PRs**, check the release notes for the updated action (linked from the PR) and ask Copilot whether the upgrade introduces any breaking or behavioral changes before approving.
+
+---
 
 ## Contents
 
@@ -113,4 +134,4 @@ A floating `@latest` tag is also maintained and always points to the most recent
 
 Every merge to `main` automatically publishes a new patch release via `.github/workflows/release.yml`. Release notes are generated from PR titles, categorized by label (breaking change, enhancement, bug, dependencies).
 
-For breaking changes, manually bump the major version in the release workflow and create the new tag **before** merging, so consuming repos have time to migrate.
+For breaking changes, manually bump the major version by creating and push the tag via git. This is the only way to break out of the auto-versioning count to a v2 or v3 or wherever you are.
